@@ -1,20 +1,39 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import 'react-native-gesture-handler';
+import { StyleSheet, Text, View, Button } from 'react-native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { NavigationContainer } from '@react-navigation/native';
+import MainTabScreen from './screens/MainTabScreen'
+import {DrawerContent} from './screens/DrawerContent';
+import DeveloperScreen from './screens/Developers'
+import Icon from 'react-native-vector-icons/Ionicons';
+
+
+
+const Drawer = createDrawerNavigator();
+
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+
+    <NavigationContainer>
+      <Drawer.Navigator screenOptions={{
+        headerStyle:{
+          backgroundColor: "#83EEFF",
+          
+        },
+        headerTitleStyle:{
+          fontWeight: "bold"
+        },
+        headerTitleAlign: 'center',
+        title: "Z.Y.R.I.S.",
+      }}
+       drawerContent={props => <DrawerContent {...props}/>}>
+        <Drawer.Screen name="Password Generator" component={MainTabScreen} />
+        <Drawer.Screen name="Developer" component={DeveloperScreen} />
+      </Drawer.Navigator>
+    </NavigationContainer>
+  
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+
