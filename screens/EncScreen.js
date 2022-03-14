@@ -4,8 +4,7 @@ import { StyleSheet, Text, View, PermissionsAndroid, TextInput } from 'react-nat
 import Butones from '../styles/button';
 import * as DocumentPicker from 'expo-document-picker';
 import CryptoJs from 'crypto-js';
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
+import axios from 'axios';
 
 
 
@@ -40,47 +39,34 @@ React.useEffect(async()=>{
             };
              setDoc(fileToUpload);
              console.log(fileToUpload)
+             console.log("==================")
+
           } 
+
         });
+
     
   }
 
+  function encryption(Message){
+    // var salt = CryptoJs.lib.WordArray.random(128 / 8);
+    // var iv = CryptoJs.lib.WordArray.random(128 / 8);
+    // var key = CryptoJs.PBKDF2( Password, salt, {
+    //   keySize: 128 / 32
+    // });
 
+    // var encrypted = CryptoJs.AES.encrypt( Message, key, { iv: iv });
+    // var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
+    // console.log(finalEncryption)
 
-
-const saveFile = async () => {
-  let fileUri = doc.uri;
-  console.log(fileUri)
-  await FileSystem.writeAsStringAsync(fileUri, "Hello World", { encoding: FileSystem.EncodingType.UTF8 });
-  const asset = await MediaLibrary.createAssetAsync(fileUri);
-  console.log(asset)
-  const album = await MediaLibrary.getAlbumAsync('Zyris Folder');
-  if (album == null) {
-    await MediaLibrary.createAlbumAsync('Zyris Folder', asset, false);
-  } else {
-    await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-  } 
-  
-
-}
-
-
-// .then(() => console.log('File Saved Successfully'))
-  // .catch(() => console.log('Error in saving file'));
-
-  function encryption(Message, Password){
-    var salt = CryptoJs.lib.WordArray.random(128 / 8);
-    var iv = CryptoJs.lib.WordArray.random(128 / 8);
-    var key = CryptoJs.PBKDF2( Password, salt, {
-      keySize: 128 / 32
+    axios.post("https://zyris-backend.herokuapp.com/enc", 
+      Message
+    ).then((response) => {
+    console.log(response.data);
+    console.log("Hello derr!")
     });
 
-    var encrypted = CryptoJs.AES.encrypt( Message, key, { iv: iv });
-    var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
-    console.log(finalEncryption)
-    console.log("==================================")
-    return finalEncryption;
-    
+       
   }
 
 
@@ -114,13 +100,8 @@ const saveFile = async () => {
 
             <Butones
               text="Encrypt"
-              onPress={()=> encryption(doc.uri, userInput)}
+              onPress={()=> encryption(doc, userInput)}
             />
-
-          <Butones
-            text="Select File"
-            onPress={saveFile}
-          />
           
           
         </View> 
