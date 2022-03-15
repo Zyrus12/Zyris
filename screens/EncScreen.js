@@ -3,17 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, PermissionsAndroid, TextInput } from 'react-native';
 import Butones from '../styles/button';
 import * as DocumentPicker from 'expo-document-picker';
-
 import axios from 'axios';
-
-import { Buffer } from 'buffer';
-
 const EncScreen = ({navigation}) => {
 
   const[userInput,setUserInput] = useState(null)
   const [data, setData] = useState({});
   const [onLoading, setonLoading] = useState(false);
-  const [url, setUrl] = useState(null);
+  const [url, setUrl] = useState(null)
 React.useEffect(async()=>{
     try {
       const granted = await PermissionsAndroid.requestMultiple([
@@ -26,13 +22,17 @@ React.useEffect(async()=>{
   },[])
 
   const pickDocument = async () => {
-      let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
+    
+     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
       setData(result);
-  }
+    }
   function blobToBase64(result) {
     return new Promise(async(resolve, _) => {
+      console.log(result.uri);
       const response = await fetch(result.uri);
+    
       const blob = await response.blob();
+      
       resolve(blob);
     });
   }
@@ -41,7 +41,7 @@ React.useEffect(async()=>{
     blobToBase64(file).then(async(result)=>{
       const form = new FormData();
       form.append(file.name, result, userInput);
-      axios.post("http://localhost:8001/enc", 
+      axios.post("https://zyris-backend.herokuapp.com/enc", 
         form,{
           headers: {
             'Content-Type':'multipart/form-data'
@@ -71,9 +71,9 @@ React.useEffect(async()=>{
 //     return new File([u8arr], filename, {type:mime});
 // }
 
-const atob = (base64) => {
-  return Buffer.from(base64, 'base64').toString('binary');
-};
+// const atob = (base64) => {
+//   return Buffer.from(base64, 'base64').toString('binary');
+// };
 
     return(
     <View style={styles.container} >
@@ -101,12 +101,12 @@ const atob = (base64) => {
               onChangeText={(val) => setUserInput(val)}
             />
           </View>
-          {!onLoading?
+        
             <Butones
               text="Encrypt"
               onPress={()=> encryption(data)}
-            />:null}
-          {url!==null?<Text selectable={true} selectTextOnFocus={true} style={styles.result} >URL: {url}</Text>:null}
+            />
+          <Text selectable={true} selectTextOnFocus={true}  style={styles.result} >{url}</Text>
           
         </View> 
     </View>
@@ -228,12 +228,5 @@ action: {
     color: '#666',
     textAlign: 'center',
 
-  },    result: {
-    fontSize: 12,
-    textAlign:'center',
-    marginBottom: 10,
-    color: 'black',
-    marginLeft: '10%',
-    marginRight: '10%'
-  }
+  },
 });
