@@ -3,17 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, PermissionsAndroid, TextInput } from 'react-native';
 import Butones from '../styles/button';
 import * as DocumentPicker from 'expo-document-picker';
-import CryptoJs from 'crypto-js';
 import axios from 'axios';
-
-
-
 const EncScreen = ({navigation}) => {
 
   const[userInput,setUserInput] = useState(null)
-  const [ doc, setDoc ] = useState({});
-
-
+  const [data, setData] = useState({});
+  const [onLoading, setonLoading] = useState(false);
+  const [url, setUrl] = useState(null)
 React.useEffect(async()=>{
     try {
       const granted = await PermissionsAndroid.requestMultiple([
@@ -26,50 +22,58 @@ React.useEffect(async()=>{
   },[])
 
   const pickDocument = async () => {
-      let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true }).then(response => {
-          if (response.type == 'success') {          
-            let { name, size, uri } = response;
-            let nameParts = name.split('.');
-            let fileType = nameParts[nameParts.length - 1];
-            var fileToUpload = {
-              name: name,
-              size: size,
-              uri: uri,
-              type: fileType
-            };
-             setDoc(fileToUpload);
-             console.log(fileToUpload)
-             console.log("==================")
-
-          } 
-
-        });
-
     
-  }
-
-  function encryption(Message){
-    // var salt = CryptoJs.lib.WordArray.random(128 / 8);
-    // var iv = CryptoJs.lib.WordArray.random(128 / 8);
-    // var key = CryptoJs.PBKDF2( Password, salt, {
-    //   keySize: 128 / 32
-    // });
-
-    // var encrypted = CryptoJs.AES.encrypt( Message, key, { iv: iv });
-    // var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
-    // console.log(finalEncryption)
-
-    axios.post("https://zyris-backend.herokuapp.com/enc", 
-      Message
-    ).then((response) => {
-    console.log(response.data);
-    console.log("Hello derr!")
+     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
+      setData(result);
+    }
+  function blobToBase64(result) {
+    return new Promise(async(resolve, _) => {
+      console.log(result.uri);
+      const response = await fetch(result.uri);
+    
+      const blob = await response.blob();
+      
+      resolve(blob);
     });
-
-       
   }
+  function encryption(file){
+    setonLoading(true);
+    blobToBase64(file).then(async(result)=>{
+      const form = new FormData();
+      form.append(file.name, result, userInput);
+      axios.post("https://zyris-backend.herokuapp.com/enc", 
+        form,{
+          headers: {
+            'Content-Type':'multipart/form-data'
+          }}).then((response)=>{
+            setUrl(response.data.url);
+          setonLoading(false);
+        })
+      });
+    }
 
+  // , ).then((res)=>{
+//       console.log(res.data)
+//     })
+// }
+//   function dataURLtoFile(dataurl, filename) {
+ 
+//     var arr = dataurl.split(','),
+//         mime = arr[0].match(/:(.*?);/)[1],
+//         bstr = atob(arr[1]), 
+//         n = bstr.length, 
+//         u8arr = new Uint8Array(n);
+        
+//     while(n--){
+//         u8arr[n] = bstr.charCodeAt(n);
+//     }
+    
+//     return new File([u8arr], filename, {type:mime});
+// }
 
+// const atob = (base64) => {
+//   return Buffer.from(base64, 'base64').toString('binary');
+// };
 
     return(
     <View style={styles.container} >
@@ -77,9 +81,9 @@ React.useEffect(async()=>{
 
       <View style={styles.card}>
           <Text style={styles.userName} >File Information</Text>  
-          <Text style={styles.result}>File Name: {doc.name} </Text>
-          <Text style={styles.result}>File Type: {doc.type} </Text>
-          <Text style={styles.result}>File Size: {doc.size} </Text>
+          <Text style={styles.result}>File Name: {data.name} </Text>
+          <Text style={styles.result}>File Type: {data.type} </Text>
+          <Text style={styles.result}>File Size: {data.size} </Text>
 
           <Butones
             text="Select File"
@@ -97,12 +101,12 @@ React.useEffect(async()=>{
               onChangeText={(val) => setUserInput(val)}
             />
           </View>
-
+        
             <Butones
               text="Encrypt"
-              onPress={()=> encryption(doc, userInput)}
+              onPress={()=> encryption(data)}
             />
-          
+          <Text selectable={true} selectTextOnFocus={true}  style={styles.result} >{url}</Text>
           
         </View> 
     </View>
