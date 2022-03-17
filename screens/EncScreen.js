@@ -1,151 +1,169 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, PermissionsAndroid, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView } from 'react-native';
 import Butones from '../styles/button';
-import * as DocumentPicker from 'expo-document-picker';
-import axios from 'axios';
-const EncScreen = ({navigation}) => {
+import CryptoJs from 'crypto-js';
 
-  const[userInput,setUserInput] = useState(null)
-  const [data, setData] = useState({});
-  const [onLoading, setonLoading] = useState(false);
-  const [url, setUrl] = useState(null)
-React.useEffect(async()=>{
-    try {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      ])
-    }catch (e){
-      console.warn(e)
-    }
-  },[])
 
-  const pickDocument = async () => {
-    
-     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
-      setData(result);
-    }
-  function blobToBase64(result) {
-    return new Promise(async(resolve, _) => {
-      console.log(result.uri);
-      const response = await fetch(result.uri);
-    
-      const blob = await response.blob();
-      
-      resolve(blob);
+const EncScreen = ({ navigation }) => {
+
+  const [key, setKey] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [ciphertext, setCiphertext] = useState(null);
+  const [encrypted, setEncrypted] = useState("");
+  const [decrypted, setDecrypted] = useState("");
+
+
+  function encryption(Message, Password) {
+    var salt = CryptoJs.lib.WordArray.random(128 / 8);
+    var iv = CryptoJs.lib.WordArray.random(128 / 8);
+    var key = CryptoJs.PBKDF2(Password, salt, {
+      keySize: 128 / 32
     });
+
+    var encrypted = CryptoJs.AES.encrypt(Message, key, { iv: iv });
+    var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
+    console.log(finalEncryption)
+    console.log("==================================")
+    setEncrypted(finalEncryption);
+    return finalEncryption;
   }
-  function encryption(file){
-    setonLoading(true);
-    blobToBase64(file).then(async(result)=>{
-      const form = new FormData();
-      form.append(file.name, result, userInput);
-      axios.post("https://zyris-backend.herokuapp.com/enc", 
-        form,{
-          headers: {
-            'Content-Type':'multipart/form-data'
-          }}).then((response)=>{
-            setUrl(response.data.url);
-          setonLoading(false);
-        })
-      });
-    }
 
-  // , ).then((res)=>{
-//       console.log(res.data)
-//     })
-// }
-//   function dataURLtoFile(dataurl, filename) {
- 
-//     var arr = dataurl.split(','),
-//         mime = arr[0].match(/:(.*?);/)[1],
-//         bstr = atob(arr[1]), 
-//         n = bstr.length, 
-//         u8arr = new Uint8Array(n);
-        
-//     while(n--){
-//         u8arr[n] = bstr.charCodeAt(n);
-//     }
-    
-//     return new File([u8arr], filename, {type:mime});
-// }
+  function decryption(finalEncryption, Password) {
+    var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
+    var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
+    var encrypted = finalEncryption.substr(64)
 
-// const atob = (base64) => {
-//   return Buffer.from(base64, 'base64').toString('binary');
-// };
+    var key = CryptoJs.PBKDF2(Password, salt, {
+      keySize: 128 / 32
+    });
 
-    return(
-    <View style={styles.container} >
-      <StatusBar style="auto" />
 
-      <View style={styles.card}>
-          <Text style={styles.userName} >File Information</Text>  
-          <Text style={styles.result}>File Name: {data.name} </Text>
-          <Text style={styles.result}>File Type: {data.type} </Text>
-          <Text style={styles.result}>File Size: {data.size} </Text>
+    var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
+    var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
+    console.log("Decypted: " + decrypted.toString(CryptoJs.enc.Utf8))
+    setDecrypted(finalDecrypted);
+    return decrypted;
+  }
 
-          <Butones
-            text="Select File"
-            onPress={pickDocument}
-          />
-      </View>
 
-      <View style={styles.card}>
+  return (
+    <ScrollView style={styles.scroller}>
+      <View style={styles.container} >
+        <StatusBar style="auto" />
+
+        <View style={styles.card}>
+          <Text style={styles.userName} >Encryption</Text>
+
           <View style={styles.action}>
-            <TextInput 
+            <TextInput
+              placeholder="Enter message"
+              placeholderTextColor="#000000"
+              style={styles.textInput}
+              multiline={true}
+              autoCapitalize="none"
+              onChangeText={(val) => setMessage(val)}
+            />
+          </View>
+          <View style={styles.action}>
+            <TextInput
               placeholder="Enter password"
               placeholderTextColor="#000000"
               style={styles.textInput}
               autoCapitalize="none"
-              onChangeText={(val) => setUserInput(val)}
+              onChangeText={(val) => setKey(val)}
             />
           </View>
-        
-            <Butones
-              text="Encrypt"
-              onPress={()=> encryption(data)}
+
+          <Butones
+            text="Encrypt"
+            onPress={() => encryption(message, key)}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.userName} >Ciphertext</Text>
+          <Text style={styles.result} selectable={true} > {encrypted} </Text>
+        </View>
+
+
+        <View style={styles.card}>
+          <Text style={styles.userName} >Decryption</Text>
+
+          <View style={styles.action}>
+            <TextInput
+              placeholder="Enter ciphertext"
+              placeholderTextColor="#000000"
+              style={styles.textInput}
+              multiline={true}
+              autoCapitalize="none"
+              onChangeText={(val) => setCiphertext(val)}
             />
-          <Text selectable={true} selectTextOnFocus={true}  style={styles.result} >{url}</Text>
-          
-        </View> 
-    </View>
-    );
-  }
+          </View>
+          <View style={styles.action}>
+            <TextInput
+              placeholder="Enter password"
+              placeholderTextColor="#000000"
+              style={styles.textInput}
+              autoCapitalize="none"
+              onChangeText={(val) => setKey(val)}
+            />
+          </View>
+
+          <Butones
+            text="Decrypt"
+            onPress={() => decryption(ciphertext, key)}
+          />
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.userName} >Plaintext</Text>
+          <Text style={styles.result} selectable={true} > {decrypted} </Text>
+        </View>
+
+
+      </View>
+    </ScrollView>
+  );
+}
 
 export default EncScreen;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, .9)',
+
     alignItems: 'center',
-   // justifyContent: 'center',
+
     padding: 20,
-    
+
+  },
+  scroller: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, .9)',
   },
   textInput: {
     flex: 1,
     paddingLeft: 8,
     color: '#000000',
     fontSize: 12,
-    
-},
-action: {
-  flexDirection: 'row',
-  marginTop: 10,
-  borderBottomWidth: 1.5,
-  borderBottomColor: '#000000',
-  paddingBottom: 5,
-  marginBottom: 10,
-  marginLeft: '8%',
-  marginRight: '8%',
-},
-  card:{
+
+  },
+  action: {
+    flexDirection: 'row',
+    marginTop: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+    paddingBottom: 5,
+    marginBottom: 10,
+    marginLeft: '8%',
+    marginRight: '8%',
+  },
+  card: {
     backgroundColor: 'rgba(131, 238, 255, 0.8)',
     width: "100%",
     marginBottom: 20,
-    borderRadius:10,
+    borderRadius: 10,
     paddingBottom: 8,
     paddingTop: 8
   },
@@ -176,7 +194,7 @@ action: {
   },
   result: {
     fontSize: 12,
-    textAlign:'left',
+    textAlign: 'left',
     marginBottom: 10,
     color: 'black',
     marginLeft: '10%',

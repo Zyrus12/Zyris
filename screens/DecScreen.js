@@ -1,98 +1,175 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, PermissionsAndroid, TextInput } from 'react-native';
+import { StyleSheet, Text, View, PermissionsAndroid, TextInput, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import Butones from '../styles/button';
+import Butonez from '../styles/buttonz';
 import * as DocumentPicker from 'expo-document-picker';
-import CryptoJs from 'crypto-js';
+import axios from 'axios';
 
-const DecScreen = ({navigation}) => {
+const DecScreen = ({ navigation }) => {
 
-  const[userInput,setUserInput] = useState(null)
-  const[keyPassword,setKeyPassword] = useState(null)
+  const [modalVisible, setModalVisible] = useState(false);
+  const [userInput, setUserInput] = useState(null)
+  const [data, setData] = useState({});
+  const [onLoading, setonLoading] = useState(false);
+  const [url, setUrl] = useState(null)
 
-  function decryption(finalEncryption, Password){
-    var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0,32))
-    var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32,32))
-    var encrypted = finalEncryption.substr(64)
+  React.useEffect(async () => {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      ])
+    } catch (e) {
+      console.warn(e)
+    }
+  }, [])
 
-    var key = CryptoJs.PBKDF2( Password, salt, {
-      keySize: 128 / 32
+  const pickDocument = async () => {
+
+    let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
+    setData(result);
+  }
+  function blobToBase64(result) {
+    return new Promise(async (resolve, _) => {
+      console.log(result.uri);
+      const response = await fetch(result.uri);
+
+      const blob = await response.blob();
+
+      resolve(blob);
     });
- 
-
-    var decrypted = CryptoJs.AES.decrypt(encrypted, key, {iv: iv});
-    
-    console.log("Decypted: " + decrypted.toString(CryptoJs.enc.Utf8))
-    return decrypted;
+  }
+  function encryption(file) {
+    setonLoading(true);
+    blobToBase64(file).then(async (result) => {
+      const form = new FormData();
+      form.append(file.name, result, userInput);
+      axios.post("https://zyris-backend.herokuapp.com/enc",
+        form, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }).then((response) => {
+        setUrl(response.data.url);
+        setonLoading(false);
+      })
+    });
   }
 
-    return(
+  return (
+    <ScrollView style={styles.scroller}>
+      <StatusBar style="auto" />
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+      >
+        <TouchableOpacity style={{ backgroundColor: 'rgba( 0, 0, 0, 0)', flex: 1 }} onPress={() => setModalVisible(!modalVisible)} >
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Encrypt or Decrypt?</Text>
+              <View style={styles.action3}>
+                <View style={{ flex: 1 }}>
+                  <Butonez
+                    text="Encrypt"
+                    onPress={() => encryption(data)}
+                  />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Butonez
+                    text="Decrypt"
+                    onPress={pickDocument}
+                  />
+                </View>
+
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
       <View style={styles.container}>
-        <StatusBar style="auto" />
+        <View style={styles.card}>
+          <Text style={styles.userName} >File Information</Text>
+          <Text style={styles.result}>File Name: {data.name} </Text>
+          <Text style={styles.result}>File Type: {data.type} </Text>
+          <Text style={styles.result}>File Size: {data.size} </Text>
+
+          <Butones
+            text="Select File"
+            onPress={pickDocument}
+          />
+
+        </View>
 
         <View style={styles.card}>
-          <Text style={styles.userName} >Decryption</Text>  
           <View style={styles.action}>
-            <TextInput 
-              placeholder="Enter Cipher"
+            <TextInput
+              placeholder="Enter password"
               placeholderTextColor="#000000"
               style={styles.textInput}
               autoCapitalize="none"
               onChangeText={(val) => setUserInput(val)}
             />
           </View>
-          <View style={styles.action}>
-            <TextInput 
-              placeholder="Enter Password"
-              placeholderTextColor="#000000"
-              style={styles.textInput}
-              autoCapitalize="none"
-              onChangeText={(val) => setKeyPassword(val)}
-            />
-          </View>
-            <Butones
-              text="Dec"
-              onPress={()=> decryption(userInput, keyPassword)}
-            />
-        </View>
 
+          <Butones
+            text="Upload"
+            onPress={() => setModalVisible(true)}
+          />
+          <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
+
+        </View>
       </View>
-    );
-  }
+    </ScrollView>
+  );
+}
 
 export default DecScreen;
 
 const styles = StyleSheet.create({
-  container: {
+  scroller: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, .9)',
+  },
+  container: {
+    flex: 1,
     alignItems: 'center',
-   // justifyContent: 'center',
+    // justifyContent: 'center',
     padding: 20,
-    
+
   },
   textInput: {
     flex: 1,
     paddingLeft: 8,
     color: '#000000',
     fontSize: 12,
-    
-},
-action: {
-  flexDirection: 'row',
-  marginTop: 10,
-  borderBottomWidth: 1.5,
-  borderBottomColor: '#000000',
-  paddingBottom: 5,
-  marginBottom: 10,
-  marginLeft: '8%',
-  marginRight: '8%',
-},
-  card:{
+
+  },
+  action: {
+    flexDirection: 'row',
+    marginTop: 10,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#000000',
+    paddingBottom: 5,
+    marginBottom: 10,
+    marginLeft: '8%',
+    marginRight: '8%',
+  },
+  action3: {
+    width: '100%',
+    flexDirection: 'row',
+    marginTop: 10,
+    paddingBottom: 5,
+    marginBottom: 10,
+  },
+  card: {
     backgroundColor: 'rgba(131, 238, 255, 0.8)',
     width: "100%",
     marginBottom: 20,
-    borderRadius:10,
+    borderRadius: 10,
     paddingBottom: 8,
     paddingTop: 8
   },
@@ -123,7 +200,7 @@ action: {
   },
   result: {
     fontSize: 12,
-    textAlign:'left',
+    textAlign: 'left',
     marginBottom: 10,
     color: 'black',
     marginLeft: '10%',
@@ -174,6 +251,28 @@ action: {
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-
   },
+  modalView: {
+    marginTop: 75,
+    margin: 20,
+    backgroundColor: "rgba( 0, 0, 0, .9)",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    borderWidth: 2,
+    borderColor: "#83EEFF",
+    shadowOffset: {
+      width: 5,
+      height: 5
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  modalText: {
+    marginBottom: 30,
+    textAlign: "center",
+    color: "#83EEFF",
+  }
 });

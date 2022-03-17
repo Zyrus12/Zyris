@@ -1,5 +1,6 @@
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Iconz from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './HomeScreen';
 import VulScreen from './VulScreen';
@@ -15,8 +16,8 @@ const DecStack = createNativeStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
 
 const MainTabScreen = () => {
-    return(
-      <Tab.Navigator
+  return (
+    <Tab.Navigator
       initialRouteName="Home"
       barStyle={{ backgroundColor: '#83EEFF' }}
       activeColor='black'
@@ -26,7 +27,7 @@ const MainTabScreen = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Password Generator',
-          LabelColor:'#000000',
+          LabelColor: '#000000',
           tabBarIcon: ({ color }) => (
             <Icon name="ios-logo-react" color='#000000' size={26} />
           ),
@@ -37,39 +38,39 @@ const MainTabScreen = () => {
         component={VulScreen}
         options={{
           tabBarLabel: 'Vulnerability Checker',
-          LabelColor:'#000000',
+          LabelColor: '#000000',
           tabBarIcon: ({ color }) => (
             <Icon name="ios-bug" color='#000000' size={26} />
           ),
         }}
       />
-       <Tab.Screen
-        name="Encryption"
+      <Tab.Screen
+        name="Text Encryptiom"
         component={EncScreen}
-        setOptions={{title: 'Gck'}}
+        setOptions={{ title: 'Gck' }}
         options={{
-          tabBarLabel: 'Encryption',
+          tabBarLabel: 'Ciphertext',
           tabBarIcon: ({ color }) => (
-            <Icon name="ios-lock-closed" color='#000000' size={26} />
+            <Iconz name="message-text-lock" color='#000000' size={26} />
           ),
-          
+
         }}
 
       />
-       <Tab.Screen
+      <Tab.Screen
         name="Decryption"
         component={DecScreen}
         options={{
           tabBarLabel: 'Decryption',
           tabBarIcon: ({ color }) => (
-            <Icon name="ios-lock-open" color='#000000' size={26} />
-            
+            <Iconz name="file-key" color='#000000' size={26} />
+
           )
-          
+
         }}
       />
     </Tab.Navigator>
-    );
+  );
 
 };
 
