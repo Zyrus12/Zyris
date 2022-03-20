@@ -3,6 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput} from 'react-native';
 import Butones from '../styles/button';
 import generatePasswords from '../functions/PasswordGenerator';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomeScreen = ({navigation}) => {
 
@@ -10,7 +12,23 @@ const HomeScreen = ({navigation}) => {
     const[passwords,setPasswords] = useState([])
 
 
-
+    React.useEffect(async()=>{
+      try {
+    
+        const value = await AsyncStorage.getItem('USER_ID');
+        if (value === null) {
+          let req = await axios.get("https://zyris-backend.herokuapp.com/getID");
+          await AsyncStorage.setItem(
+          'USER_ID',
+          req.data.id
+        );
+        }
+        
+      } catch (error) {
+        // Error saving data
+        console.log("hello");
+      }
+    }, []);
     return(
         
           <View style={styles.container} >

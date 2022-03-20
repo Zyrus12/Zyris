@@ -5,56 +5,84 @@ import Butones from '../styles/button';
 import Butonez from '../styles/buttonz';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from "expo-web-browser";
 const DecScreen = ({ navigation }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [userInput, setUserInput] = useState(null)
+  const [userInput, setUserInput] = useState("")
   const [data, setData] = useState({});
   const [onLoading, setonLoading] = useState(false);
-  const [url, setUrl] = useState(null)
-
+  const [files, setFiles] = useState([]);
+  const [pass, setPass] = useState({});
   React.useEffect(async () => {
+
     try {
       const granted = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
       ])
+
     } catch (e) {
       console.warn(e)
     }
+   
+  }, [])
+  React.useEffect(async ()=>{
+    let req = await axios.get(`https://zyris-backend.herokuapp.com/files?id=${await AsyncStorage.getItem("USER_ID")}`);
+    let obj = {};
+    let data = req.data;
+    for(let i of data)
+      obj[i.filename] = ""
+    setPass(obj);
+    setFiles(data);
   }, [])
 
   const pickDocument = async () => {
-
     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
     setData(result);
   }
   function blobToBase64(result) {
     return new Promise(async (resolve, _) => {
-      console.log(result.uri);
       const response = await fetch(result.uri);
-
       const blob = await response.blob();
-
       resolve(blob);
     });
   }
-  function encryption(file) {
+  function save(file, check) {
     setonLoading(true);
     blobToBase64(file).then(async (result) => {
       const form = new FormData();
       form.append(file.name, result, userInput);
-      axios.post("https://zyris-backend.herokuapp.com/enc",
+      let req = await axios.post(`https://zyris-backend.herokuapp.com/enc?id=${await AsyncStorage.getItem('USER_ID')}&encrypt=${check}`,
         form, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
-      }).then((response) => {
-        setUrl(response.data.url);
-        setonLoading(false);
       })
+      let obj = {};
+      let data = req.data;
+      for(let i of data)
+        obj[i.filename] = ""
+      setPass(obj);
+      setFiles(data);
+      setonLoading(false);
+      setModalVisible(false);
     });
+  }
+
+  const update = async (file, pw) =>{
+    let req = await axios.post(`https://zyris-backend.herokuapp.com/encryptdecrypt`,{
+        id: await AsyncStorage.getItem('USER_ID'),
+        pw: pw,
+        filename: file
+      });
+      let obj = {};
+      let data = req.data;
+      for(let i of data)
+        obj[i.filename] = ""
+      setPass(obj);
+      setFiles(data);
   }
 
   return (
@@ -66,26 +94,43 @@ const DecScreen = ({ navigation }) => {
         transparent={true}
         visible={modalVisible}
       >
-        <TouchableOpacity style={{ backgroundColor: 'rgba( 0, 0, 0, 0)', flex: 1 }} onPress={() => setModalVisible(!modalVisible)} >
+        <TouchableOpacity style={{ backgroundColor: 'rgba( 0, 0, 0, 0)', flex: 1 }}  >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
-              <Text style={styles.modalText}>Encrypt or Decrypt?</Text>
+              <Text style={styles.modalText}>Do you want to encrypt the file?</Text>
+              <View style={styles.action}>
+                <TextInput
+                    placeholder="Enter password"
+                    placeholderTextColor="lightgrey"
+                    style={styles.textInput}
+                    value={userInput}
+                    autoCapitalize="none"
+                    onChangeText={(val) => setUserInput(val)}
+                  
+                  />
+              </View>
               <View style={styles.action3}>
                 <View style={{ flex: 1 }}>
                   <Butonez
-                    text="Encrypt"
-                    onPress={() => encryption(data)}
+                    text="Yes"
+                    onPress={() => save(data, true)}
                   />
                 </View>
 
                 <View style={{ flex: 1 }}>
                   <Butonez
-                    text="Decrypt"
-                    onPress={pickDocument}
+                    text="No"
+                    onPress={()=>save(data, false)}
                   />
                 </View>
-
+              
               </View>
+              <View style={{ flex: 1 }}>
+                  <Butonez
+                    text="Close"
+                    onPress={()=>setModalVisible(false)}
+                  />
+                </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -101,27 +146,45 @@ const DecScreen = ({ navigation }) => {
             text="Select File"
             onPress={pickDocument}
           />
-
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.action}>
-            <TextInput
-              placeholder="Enter password"
-              placeholderTextColor="#000000"
-              style={styles.textInput}
-              autoCapitalize="none"
-              onChangeText={(val) => setUserInput(val)}
-            />
-          </View>
-
+          {"name" in data?
           <Butones
             text="Upload"
             onPress={() => setModalVisible(true)}
-          />
+          /> :null 
+          }
+        </View>
+
+        {/* <View style={styles.card}>
           <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
 
-        </View>
+        </View> */}
+        {files.map((data, index)=>{
+          return(
+          <View style={styles.card} key={index}>
+          <View style={styles.action}>
+            <Text>{data.filename}</Text>
+          </View>
+          <View style={styles.action}>
+          <TextInput
+              placeholder="Enter password"
+              placeholderTextColor="black"
+              style={styles.textInput2}
+
+              autoCapitalize="none"
+              onChangeText={(val) => pass[data.filename] = val}
+          />
+          </View>
+          <Butones
+            text={data.encrypt?"Decrypt":"Encrypt"}
+            onPress={() => update(data.filename, pass[data.filename])}
+          />
+          <Butones
+            text={"Download"}
+            onPress={() => WebBrowser.openBrowserAsync(data.url)}
+          />
+        </View>);
+        })}
+         
       </View>
     </ScrollView>
   );
@@ -144,15 +207,22 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     paddingLeft: 8,
-    color: '#000000',
+    color: 'white',
     fontSize: 12,
 
+  },
+  textInput2: {
+    flex: 1,
+    paddingLeft: 8,
+    color: 'white',
+    fontSize: 12,
+    width: '70%'
   },
   action: {
     flexDirection: 'row',
     marginTop: 10,
     borderBottomWidth: 1.5,
-    borderBottomColor: '#000000',
+    borderBottomColor: 'white',
     paddingBottom: 5,
     marginBottom: 10,
     marginLeft: '8%',
