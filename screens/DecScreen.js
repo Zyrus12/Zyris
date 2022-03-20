@@ -15,6 +15,8 @@ const DecScreen = ({ navigation }) => {
   const [onLoading, setonLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [pass, setPass] = useState({});
+  const [progressEncDec, setProgressEncDec] = useState(0);
+  const [progressUplaod, setProgressUpload] = useState(0);
   React.useEffect(async () => {
 
     try {
@@ -58,7 +60,10 @@ const DecScreen = ({ navigation }) => {
         form, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+          onUploadProgress: progressEvent => {
+            setProgressUpload((progressEvent.loaded / progressEvent.total) * 100);
+          }
       })
       let obj = {};
       let data = req.data;
@@ -67,6 +72,7 @@ const DecScreen = ({ navigation }) => {
       setPass(obj);
       setFiles(data);
       setonLoading(false);
+      setProgressUpload(0);
       setModalVisible(false);
     });
   }
@@ -76,12 +82,17 @@ const DecScreen = ({ navigation }) => {
         id: await AsyncStorage.getItem('USER_ID'),
         pw: pw,
         filename: file
+      }, {
+        onUploadProgress: progressEvent => {
+          setProgressEncDec((progressEvent.loaded / progressEvent.total) * 100);
+        }
       });
       let obj = {};
       let data = req.data;
       for(let i of data)
         obj[i.filename] = ""
       setPass(obj);
+      setProgressEncDec(0);
       setFiles(data);
   }
 
@@ -106,9 +117,11 @@ const DecScreen = ({ navigation }) => {
                     value={userInput}
                     autoCapitalize="none"
                     onChangeText={(val) => setUserInput(val)}
-                  
                   />
               </View>
+              {progressUplaod>0?  <View style={styles.action}>
+                <Text style={{color:'white'}}>Uploading: {progressUplaod.toFixed(2)}%</Text>
+              </View>:
               <View style={styles.action3}>
                 <View style={{ flex: 1 }}>
                   <Butonez
@@ -125,6 +138,7 @@ const DecScreen = ({ navigation }) => {
                 </View>
               
               </View>
+              }
               <View style={{ flex: 1 }}>
                   <Butonez
                     text="Close"
@@ -158,7 +172,11 @@ const DecScreen = ({ navigation }) => {
           <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
 
         </View> */}
-        {files.map((data, index)=>{
+        {progressEncDec>0?
+        <View style={styles.action}>
+            <Text style={{color:'white'}}>Uploading: {progressEncDec.toFixed(2)}%</Text>
+        </View>:
+        files.map((data, index)=>{
           return(
           <View style={styles.card} key={index}>
           <View style={styles.action}>
@@ -174,6 +192,7 @@ const DecScreen = ({ navigation }) => {
               onChangeText={(val) => pass[data.filename] = val}
           />
           </View>
+          
           <Butones
             text={data.encrypt?"Decrypt":"Encrypt"}
             onPress={() => update(data.filename, pass[data.filename])}
