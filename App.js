@@ -4,12 +4,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import MainTabScreen from './screens/MainTabScreen'
 import { DrawerContent } from './screens/DrawerContent';
 import DeveloperScreen from './screens/Developers'
-
-
+import { AsyncStorage } from "@react-native-async-storage/async-storage";
 const Drawer = createDrawerNavigator();
 
 
 export default function App() {
+
   return (
 
     <NavigationContainer>
