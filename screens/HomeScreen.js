@@ -17,7 +17,7 @@ const HomeScreen = ({navigation}) => {
     
         const value = await AsyncStorage.getItem('USER_ID');
         if (value === null) {
-          let req = await axios.get("http://localhost:8002/getID");
+          let req = await axios.get("https://zyris-backend.herokuapp.com/getID");
           await AsyncStorage.setItem(
           'USER_ID',
           req.data.id
