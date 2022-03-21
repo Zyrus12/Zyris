@@ -15,6 +15,10 @@ const DecScreen = ({ navigation }) => {
   const [onLoading, setonLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [pass, setPass] = useState({});
+  const [progressEncDec, setProgressEncDec] = useState(0);
+  const [progressUplaod, setProgressUpload] = useState(0);
+  const [encryptingSave, setencryptingSave] = useState(false);
+  const [encrypting, setEncrypting] = useState("");
   React.useEffect(async () => {
 
     try {
@@ -58,7 +62,10 @@ const DecScreen = ({ navigation }) => {
         form, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+          onUploadProgress: progressEvent => {
+            setProgressUpload((progressEvent.loaded / progressEvent.total) * 100);
+          }
       })
       let obj = {};
       let data = req.data;
@@ -66,7 +73,9 @@ const DecScreen = ({ navigation }) => {
         obj[i.filename] = ""
       setPass(obj);
       setFiles(data);
+      setencryptingSave(false);
       setonLoading(false);
+      setProgressUpload(0);
       setModalVisible(false);
     });
   }
@@ -76,15 +85,34 @@ const DecScreen = ({ navigation }) => {
         id: await AsyncStorage.getItem('USER_ID'),
         pw: pw,
         filename: file
+      }, {
+        onUploadProgress: progressEvent => {
+          setProgressEncDec((progressEvent.loaded / progressEvent.total) * 100);
+        }
       });
       let obj = {};
       let data = req.data;
       for(let i of data)
         obj[i.filename] = ""
       setPass(obj);
+      setProgressEncDec(0);
       setFiles(data);
   }
-
+  const deleteItem= async ( name) =>{
+    setEncrypting("Deleting....");
+    setProgressEncDec(101);
+    let req = await axios.post(`https://zyris-backend.herokuapp.com/delete`,{
+        id: await AsyncStorage.getItem('USER_ID'),
+        name: name
+      });
+      let obj = {};
+      let data = req.data;
+      for(let i of data)
+        obj[i.filename] = ""
+      setPass(obj);
+      setProgressEncDec(0);
+      setFiles(data);
+  }
   return (
     <ScrollView style={styles.scroller}>
       <StatusBar style="auto" />
@@ -98,22 +126,34 @@ const DecScreen = ({ navigation }) => {
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
               <Text style={styles.modalText}>Do you want to encrypt the file?</Text>
+           
+              {progressUplaod>0?  progressUplaod>=100?
+              encryptingSave?
               <View style={styles.action}>
-                <TextInput
-                    placeholder="Enter password"
-                    placeholderTextColor="lightgrey"
-                    style={styles.textInput}
-                    value={userInput}
-                    autoCapitalize="none"
-                    onChangeText={(val) => setUserInput(val)}
-                  
-                  />
+                <Text style={{color:'white'}}>Encrypting...</Text>
+              </View>:
+              <View style={styles.action}>
+                <Text style={{color:'white'}}>Finishing...</Text>
               </View>
+              : <View style={styles.action}>
+                <Text style={{color:'white'}}>Uploading: {progressUplaod.toFixed(2)}%</Text>
+              </View>:
+              <>
+                 <View style={styles.action}>
+                 <TextInput
+                     placeholder="Enter password"
+                     placeholderTextColor="lightgrey"
+                     style={styles.textInput}
+                     value={userInput}
+                     autoCapitalize="none"
+                     onChangeText={(val) => setUserInput(val)}
+                   />
+               </View>
               <View style={styles.action3}>
                 <View style={{ flex: 1 }}>
                   <Butonez
                     text="Yes"
-                    onPress={() => save(data, true)}
+                    onPress={() => {setencryptingSave(true);save(data, true);}}
                   />
                 </View>
 
@@ -125,6 +165,8 @@ const DecScreen = ({ navigation }) => {
                 </View>
               
               </View>
+              </>
+              }
               <View style={{ flex: 1 }}>
                   <Butonez
                     text="Close"
@@ -158,7 +200,15 @@ const DecScreen = ({ navigation }) => {
           <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
 
         </View> */}
-        {files.map((data, index)=>{
+        {progressEncDec>0?
+        progressEncDec>=100?
+        <View style={styles.action}>
+            <Text style={{color:'white'}}>{encrypting}</Text>
+        </View>:
+        <View style={styles.action}>
+            <Text style={{color:'white'}}>Uploading: {progressEncDec.toFixed(2)}%</Text>
+        </View>:
+        files.map((data, index)=>{
           return(
           <View style={styles.card} key={index}>
           <View style={styles.action}>
@@ -174,13 +224,18 @@ const DecScreen = ({ navigation }) => {
               onChangeText={(val) => pass[data.filename] = val}
           />
           </View>
+          
           <Butones
             text={data.encrypt?"Decrypt":"Encrypt"}
-            onPress={() => update(data.filename, pass[data.filename])}
+            onPress={() => {setEncrypting(data.encrypt?"Decrypting....":"Encrypting....");update(data.filename, pass[data.filename]);}}
           />
           <Butones
             text={"Download"}
             onPress={() => WebBrowser.openBrowserAsync(data.url)}
+          />
+          <Butones
+            text={"Delete"}
+            onPress={() => deleteItem(data.filename)}
           />
         </View>);
         })}
