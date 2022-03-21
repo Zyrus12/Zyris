@@ -58,7 +58,7 @@ const DecScreen = ({ navigation }) => {
     blobToBase64(file).then(async (result) => {
       const form = new FormData();
       form.append(file.name, result, userInput);
-      let req = await axios.post(`http://localhost:8002/enc?id=${await AsyncStorage.getItem('USER_ID')}&encrypt=${check}`,
+      let req = await axios.post(`https://zyris-backend.herokuapp.com/enc?id=${await AsyncStorage.getItem('USER_ID')}&encrypt=${check}`,
         form, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -81,7 +81,7 @@ const DecScreen = ({ navigation }) => {
   }
 
   const update = async (file, pw) =>{
-    let req = await axios.post(`http://localhost:8002/encryptdecrypt`,{
+    let req = await axios.post(`https://zyris-backend.herokuapp.com/encryptdecrypt`,{
         id: await AsyncStorage.getItem('USER_ID'),
         pw: pw,
         filename: file
@@ -101,7 +101,7 @@ const DecScreen = ({ navigation }) => {
   const deleteItem= async ( name) =>{
     setEncrypting("Deleting....");
     setProgressEncDec(101);
-    let req = await axios.post(`http://localhost:8002/delete`,{
+    let req = await axios.post(`https://zyris-backend.herokuapp.com/delete`,{
         id: await AsyncStorage.getItem('USER_ID'),
         name: name
       });
