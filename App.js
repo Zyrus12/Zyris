@@ -17,6 +17,9 @@ export default function App() {
         drawerStyle: {
           backgroundColor: 'rgba( 0, 0, 0, .6)',
         },
+        drawerStyle: {
+          backgroundColor: 'rgba( 0, 0, 0, .6)',
+        },
         headerStyle: {
           backgroundColor: "#83EEFF",
         },

@@ -7,7 +7,8 @@ import CryptoJs from 'crypto-js';
 
 const EncScreen = ({ navigation }) => {
 
-  const [key, setKey] = useState(null);
+  const [encKey, setEncKey] = useState(null);
+  const [decKey, setDecKey] = useState(null);
   const [message, setMessage] = useState(null);
   const [ciphertext, setCiphertext] = useState(null);
   const [encrypted, setEncrypted] = useState("");
@@ -15,36 +16,58 @@ const EncScreen = ({ navigation }) => {
 
 
   function encryption(Message, Password) {
-    var salt = CryptoJs.lib.WordArray.random(128 / 8);
-    var iv = CryptoJs.lib.WordArray.random(128 / 8);
-    var key = CryptoJs.PBKDF2(Password, salt, {
-      keySize: 128 / 32
-    });
+    try{
+      if(Message == null || Password == null){
+        alert("Please make sure you enter Message and Password");
+        return false;
+      }else{
+  
+      var salt = CryptoJs.lib.WordArray.random(128 / 8);
+      var iv = CryptoJs.lib.WordArray.random(128 / 8);
+      var key = CryptoJs.PBKDF2(Password, salt, {
+        keySize: 128 / 32
+      });
+  
+      var encrypted = CryptoJs.AES.encrypt(Message, key, { iv: iv });
+      var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
+      setEncrypted(finalEncryption);
+      return finalEncryption;
+    }
+    }catch(e){
+      console.error(e)
+    }
+}
 
-    var encrypted = CryptoJs.AES.encrypt(Message, key, { iv: iv });
-    var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
-    console.log(finalEncryption)
-    console.log("==================================")
-    setEncrypted(finalEncryption);
-    return finalEncryption;
-  }
 
   function decryption(finalEncryption, Password) {
-    var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
-    var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
-    var encrypted = finalEncryption.substr(64)
-
-    var key = CryptoJs.PBKDF2(Password, salt, {
-      keySize: 128 / 32
-    });
-
-
-    var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
-    var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
-    console.log("Decypted: " + decrypted.toString(CryptoJs.enc.Utf8))
-    setDecrypted(finalDecrypted);
-    return decrypted;
-  }
+    try{
+      if(finalEncryption == null || Password == null){
+        alert("Please make sure you enter a Cipher and a Password")
+        return false;
+      }else{
+      var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
+      var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
+      var encrypted = finalEncryption.substr(64)
+  
+      var key = CryptoJs.PBKDF2(Password, salt, {
+        keySize: 128 / 32
+      });
+  
+  
+      var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
+      var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
+  
+      if(decrypted == ""){
+        alert("Wrong password!")
+      }else{
+      setDecrypted(finalDecrypted);
+      return decrypted;
+      }
+    }
+    }catch(e){
+      console.error(e)
+    }   
+}
 
 
   return (
@@ -59,8 +82,8 @@ const EncScreen = ({ navigation }) => {
             <TextInput
               placeholder="Enter message"
               placeholderTextColor="#000000"
-              style={styles.textInput}
               multiline={true}
+              style={styles.textInput}
               autoCapitalize="none"
               onChangeText={(val) => setMessage(val)}
             />
@@ -69,15 +92,16 @@ const EncScreen = ({ navigation }) => {
             <TextInput
               placeholder="Enter password"
               placeholderTextColor="#000000"
+              multiline={true}
               style={styles.textInput}
               autoCapitalize="none"
-              onChangeText={(val) => setKey(val)}
+              onChangeText={(val) => setEncKey(val)}
             />
           </View>
 
           <Butones
             text="Encrypt"
-            onPress={() => encryption(message, key)}
+            onPress={() => encryption(message, encKey)}
           />
         </View>
 
@@ -94,8 +118,8 @@ const EncScreen = ({ navigation }) => {
             <TextInput
               placeholder="Enter ciphertext"
               placeholderTextColor="#000000"
-              style={styles.textInput}
               multiline={true}
+              style={styles.textInput}
               autoCapitalize="none"
               onChangeText={(val) => setCiphertext(val)}
             />
@@ -104,15 +128,16 @@ const EncScreen = ({ navigation }) => {
             <TextInput
               placeholder="Enter password"
               placeholderTextColor="#000000"
+              multiline={true}
               style={styles.textInput}
               autoCapitalize="none"
-              onChangeText={(val) => setKey(val)}
+              onChangeText={(val) => setDecKey(val)}
             />
           </View>
 
           <Butones
             text="Decrypt"
-            onPress={() => decryption(ciphertext, key)}
+            onPress={() => decryption(ciphertext, decKey)}
           />
         </View>
 
@@ -147,7 +172,6 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     color: '#000000',
     fontSize: 12,
-
   },
   action: {
     flexDirection: 'row',

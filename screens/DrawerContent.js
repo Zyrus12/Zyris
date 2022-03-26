@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import {
     Avatar,
     Title,
     Caption,
-    Paragraph,
     Drawer,
 } from 'react-native-paper';
 import {
@@ -12,8 +11,7 @@ import {
     DrawerItem
 } from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/Ionicons';
-
-
+import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
 
 
 
@@ -22,7 +20,7 @@ export function DrawerContent(props) {
 
 
     return(
-        <View style={{flex:1, backgroundColor: 'rgba(0, 0, 0, 0.88)'}}>
+        <View style={{flex:1}}>
             <DrawerContentScrollView {...props}>
                 <View style={styles.drawerContent}>
                     <View style={styles.userInfoSection}>
@@ -79,8 +77,8 @@ export function DrawerContent(props) {
             <Drawer.Section style={styles.bottomDrawerSection}>
                 <DrawerItem 
                     icon={({color, size}) => (
-                        <Icon 
-                        name="ios-log-out-outline" 
+                        <Icons
+                        name="account-lock" 
                         color= "#83EEFF"
                         size={size}
                         />
@@ -88,8 +86,7 @@ export function DrawerContent(props) {
                     labelStyle={{
                         color: "#83EEFF"
                     }}
-                    label="Sign Out"
-                    onPress={() =>  BackHandler.exitApp()}
+                    label="Protect Yourself"
                 />
             </Drawer.Section>
         </View>
