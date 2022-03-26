@@ -1,17 +1,11 @@
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Iconz from 'react-native-vector-icons/MaterialCommunityIcons';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './HomeScreen';
 import VulScreen from './VulScreen';
 import EncScreen from './EncScreen';
 import DecScreen from './DecScreen';
 
-
-const HomeStack = createNativeStackNavigator();
-const VulStack = createNativeStackNavigator();
-const EncStack = createNativeStackNavigator();
-const DecStack = createNativeStackNavigator();
 
 const Tab = createMaterialBottomTabNavigator();
 

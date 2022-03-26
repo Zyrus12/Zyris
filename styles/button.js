@@ -1,8 +1,6 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, Text, View } from 'react-native';
-import { Dimensions } from 'react-native'
-const widthP = Dimensions.get('window').width;
-const heightP = Dimensions.get('window').height;
+
 
 export default function Butones({text, onPress}){
     return (

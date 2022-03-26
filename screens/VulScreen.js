@@ -17,14 +17,18 @@ const VulScreen = ({navigation}) => {
   
 
  function checkPassword (){
-  const evaluation = zxcvbn(userInput)
-    console.log(evaluation)
+  
+  if(userInput == null){
+    alert("Please enter a password.")
+    return false;
+  }else{
+    const evaluation = zxcvbn(userInput)
     setWarning(evaluation.feedback.warning)
     setSuggestions(evaluation.feedback.suggestions)
     setCrackTime(evaluation.crack_times_display)
     setSequence(evaluation.sequence)
     setScore(evaluation.score==0 || evaluation.score==1?"Weak":evaluation.score==2?"Fair":evaluation.score==3?"Good":evaluation.score==4?"Strong":"Weak")
-
+  }
  }
 
 
@@ -39,6 +43,7 @@ const VulScreen = ({navigation}) => {
             <TextInput 
                     placeholder="Input Password Here"
                     placeholderTextColor="#000000"
+                    multiline={true}
                     style={styles.textInput}
                     autoCapitalize="none"                   
                     onChangeText={(val) => setUserInput(val)}
@@ -84,11 +89,8 @@ export default VulScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
- 
     alignItems: 'center',
- 
-    padding: 20,
-    
+    padding: 20,    
   },
   scroller: {
     flex: 1,
@@ -99,7 +101,6 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     color: '#000000',
     fontSize: 12,
-    
 },
 action: {
   flexDirection: 'row',
@@ -126,7 +127,6 @@ action: {
     borderWidth: 2,
     borderColor: '#83EEFF',
     marginTop: 25
-
   },
   userName: {
     fontSize: 25,
@@ -184,7 +184,6 @@ action: {
   },
   userInfoItem: {
     justifyContent: 'center',
-
   },
   userInfoTitle: {
     fontSize: 20,
@@ -197,6 +196,5 @@ action: {
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-
   },
 });
