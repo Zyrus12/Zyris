@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const EncryptButton = (props) =>{
     const [encrypting, setEncrypting] = useState("");
     const update = async (file, pw) =>{
-        let req = await axios.post(`http://localhost:8002/encryptdecrypt`,{
+        let req = await axios.post(`https://zyris-backend.herokuapp.com/encryptdecrypt`,{
             id: await AsyncStorage.getItem('USER_ID'),
             pw: pw,
             filename: file
