@@ -15,14 +15,12 @@ const HomeScreen = ({navigation}) => {
     React.useEffect(async()=>{
       try {
     
-        const value = await AsyncStorage.getItem('USER_ID');
-        if (value === null) {
-          let req = await axios.get("https://zyris-backend.herokuapp.com/getID");
+          let req = await axios.get(`https://zyris-backend.herokuapp.com/getID?id=${await AsyncStorage.getItem("USER_ID")}`);
           await AsyncStorage.setItem(
           'USER_ID',
           req.data.id
-        );
-        }
+          );
+
         
       } catch (error) {
         // Error saving data
