@@ -6,21 +6,23 @@ import Butonez from '../styles/buttonz';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as WebBrowser from "expo-web-browser";
+
+import { storage } from '../firebase';
+import CryptoJs from 'crypto-js';
+import EncryptButton from './components/EncryptButton';
+import DownloadButton from './components/DownloadButton';
+
+
+
 const DecScreen = ({ navigation }) => {
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [userInput, setUserInput] = useState("")
   const [data, setData] = useState({});
   const [onLoading, setonLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [pass, setPass] = useState({});
-  const [progressEncDec, setProgressEncDec] = useState(0);
-  const [progressUplaod, setProgressUpload] = useState(0);
-  const [encryptingSave, setencryptingSave] = useState(false);
-  const [encrypting, setEncrypting] = useState("");
-  React.useEffect(async () => {
 
+  React.useEffect(async () => {
     try {
       const granted = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
@@ -32,7 +34,9 @@ const DecScreen = ({ navigation }) => {
     }
    
   }, [])
+
   React.useEffect(async ()=>{
+
     let req = await axios.get(`https://zyris-backend.herokuapp.com/files?id=${await AsyncStorage.getItem("USER_ID")}`);
     let obj = {};
     let data = req.data;
@@ -42,76 +46,41 @@ const DecScreen = ({ navigation }) => {
     setFiles(data);
   }, [])
 
+  function decrypt(finalEncryption) {
+    var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
+    var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
+    var encrypted = finalEncryption.substr(64)
+    var key = CryptoJs.PBKDF2("703B5E36544B8181", salt, {
+      keySize: 128 / 32
+    });
+    var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
+    var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
+    return finalDecrypted
+  }
+
   const pickDocument = async () => {
     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
     setData(result);
   }
-  function blobToBase64(result) {
-    return new Promise(async (resolve, _) => {
-      const response = await fetch(result.uri);
-      const blob = await response.blob();
-      resolve(blob);
-    });
-  }
-  function save(file, check) {
-    setonLoading(true);
-    blobToBase64(file).then(async (result) => {
-      const form = new FormData();
-      form.append(file.name, result, userInput);
-      let req = await axios.post(`https://zyris-backend.herokuapp.com/enc?id=${await AsyncStorage.getItem('USER_ID')}&encrypt=${check}`,
-        form, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-          onUploadProgress: progressEvent => {
-            setProgressUpload((progressEvent.loaded / progressEvent.total) * 100);
-          }
-      })
-      let obj = {};
-      let data = req.data;
-      for(let i of data)
-        obj[i.filename] = ""
-      setPass(obj);
-      setFiles(data);
-      setencryptingSave(false);
-      setonLoading(false);
-      setProgressUpload(0);
-      setModalVisible(false);
-    });
-  }
 
-  const update = async (file, pw) =>{
-    let req = await axios.post(`https://zyris-backend.herokuapp.com/encryptdecrypt`,{
-        id: await AsyncStorage.getItem('USER_ID'),
-        pw: pw,
-        filename: file
-      }, {
-        onUploadProgress: progressEvent => {
-          setProgressEncDec((progressEvent.loaded / progressEvent.total) * 100);
-        }
-      });
+  const save = async(file) =>{
+    setonLoading(true);
+    try{
+      const response = await fetch(file.uri);
+      const blob = await response.blob();
+      await storage.ref(`encryptedfiles`).child(decrypt(await AsyncStorage.getItem("USER_ID"))).child(file.name).put(blob);
+      let req = await axios.get(`https://zyris-backend.herokuapp.com/files?id=${await AsyncStorage.getItem("USER_ID")}`);
       let obj = {};
       let data = req.data;
       for(let i of data)
         obj[i.filename] = ""
       setPass(obj);
-      setProgressEncDec(0);
       setFiles(data);
-  }
-  const deleteItem= async ( name) =>{
-    setEncrypting("Deleting....");
-    setProgressEncDec(101);
-    let req = await axios.post(`https://zyris-backend.herokuapp.com/delete`,{
-        id: await AsyncStorage.getItem('USER_ID'),
-        name: name
-      });
-      let obj = {};
-      let data = req.data;
-      for(let i of data)
-        obj[i.filename] = ""
-      setPass(obj);
-      setProgressEncDec(0);
-      setFiles(data);
+      setonLoading(false);
+      setModalVisible(false)
+    }catch{
+      setonLoading(false);
+    }
   }
   return (
     <ScrollView style={styles.scroller}>
@@ -125,54 +94,32 @@ const DecScreen = ({ navigation }) => {
         <TouchableOpacity style={{ backgroundColor: 'rgba( 0, 0, 0, 0)', flex: 1 }}  >
           <View style={styles.centeredView}>
             <View style={styles.modalView}>
-              <Text style={styles.modalText}>Do you want to encrypt the file?</Text>
+              <Text style={styles.modalText}>Are you sure?</Text>
            
-              {progressUplaod>0?  progressUplaod>=100?
-              encryptingSave?
+              {onLoading?
               <View style={styles.action}>
-                <Text style={{color:'white'}}>Encrypting...</Text>
-              </View>:
-              <View style={styles.action}>
-                <Text style={{color:'white'}}>Finishing...</Text>
-              </View>
-              : <View style={styles.action}>
-                <Text style={{color:'white'}}>Uploading: {progressUplaod.toFixed(2)}%</Text>
-              </View>:
+                <Text style={{color:'white'}}>Uploading...</Text>
+              </View> 
+              :
               <>
-                 <View style={styles.action}>
-                 <TextInput
-                     placeholder="Enter password"
-                     placeholderTextColor="lightgrey"
-                     style={styles.textInput}
-                     value={userInput}
-                     autoCapitalize="none"
-                     onChangeText={(val) => setUserInput(val)}
-                   />
-               </View>
               <View style={styles.action3}>
                 <View style={{ flex: 1 }}>
                   <Butonez
                     text="Yes"
-                    onPress={() => {setencryptingSave(true);save(data, true);}}
+                    onPress={() => {save(data);}}
                   />
                 </View>
 
                 <View style={{ flex: 1 }}>
                   <Butonez
                     text="No"
-                    onPress={()=>save(data, false)}
+                    onPress={()=>setModalVisible(false)}
                   />
                 </View>
               
               </View>
               </>
               }
-              <View style={{ flex: 1 }}>
-                  <Butonez
-                    text="Close"
-                    onPress={()=>setModalVisible(false)}
-                  />
-                </View>
             </View>
           </View>
         </TouchableOpacity>
@@ -200,15 +147,7 @@ const DecScreen = ({ navigation }) => {
           <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
 
         </View> */}
-        {progressEncDec>0?
-        progressEncDec>=100?
-        <View style={styles.action}>
-            <Text style={{color:'white'}}>{encrypting}</Text>
-        </View>:
-        <View style={styles.action}>
-            <Text style={{color:'white'}}>Uploading: {progressEncDec.toFixed(2)}%</Text>
-        </View>:
-        files.map((data, index)=>{
+        {files.map((data, index)=>{
           return(
           <View style={styles.card} key={index}>
           <View style={styles.action}>
@@ -219,24 +158,12 @@ const DecScreen = ({ navigation }) => {
               placeholder="Enter password"
               placeholderTextColor="black"
               style={styles.textInput2}
-
               autoCapitalize="none"
               onChangeText={(val) => pass[data.filename] = val}
           />
           </View>
-          
-          <Butones
-            text={data.encrypt?"Decrypt":"Encrypt"}
-            onPress={() => {setEncrypting(data.encrypt?"Decrypting....":"Encrypting....");update(data.filename, pass[data.filename]);}}
-          />
-          <Butones
-            text={"Download"}
-            onPress={() => WebBrowser.openBrowserAsync(data.url)}
-          />
-          <Butones
-            text={"Delete"}
-            onPress={() => deleteItem(data.filename)}
-          />
+         <EncryptButton setPass={setPass} setFiles={setFiles} data={data} pass={pass}/>
+        <DownloadButton data={data}/>
         </View>);
         })}
          
