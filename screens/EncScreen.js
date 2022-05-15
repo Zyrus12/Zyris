@@ -1,17 +1,60 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import Butones from '../styles/button';
 import CryptoJs from 'crypto-js';
+import Feather from 'react-native-vector-icons/Feather';
+import { set } from 'react-native-reanimated';
 
 
 const EncScreen = ({ navigation }) => {
 
-  const [key, setKey] = useState(null);
-  const [message, setMessage] = useState(null);
-  const [ciphertext, setCiphertext] = useState(null);
+  const [checkPass,setCheckPass] = useState(true)
+  const [checkKey, setCheckKey] = useState(true)
+  const [pass, setPass] = useState("");
+  const [key, setKey] = useState("");
+  const [message, setMessage] = useState("");
+  const [ciphertext, setCiphertext] = useState("");
   const [encrypted, setEncrypted] = useState("");
   const [decrypted, setDecrypted] = useState("");
+
+  function showPass (){
+    setCheckPass(!checkPass)
+  }
+
+  function showKey (){
+    setCheckKey(!checkKey)
+  }
+
+  function checkEnc(){
+      if(message == ""){
+        alert("Please make sure to enter a text.")
+        setEncrypted("")    
+      }else if(pass == ""){
+        alert("Please make sure to enter a password.")
+        setEncrypted("")
+      }else if(pass.indexOf(" ") >= 0){
+        alert("You cannot enter a space in password.")
+        setEncrypted("")
+      }else{
+        encryption(message, pass)
+      }
+  }
+
+  function checkDec(){
+    if(ciphertext == ""){
+      alert("Please make sure to enter a cipher or encrypted text.")
+      setDecrypted("")
+    }else if(key == ""){
+      alert("Please make sure to enter a key or password.")
+      setDecrypted("")
+    }else if(key.indexOf(" ") >= 0){
+      alert("You cannot enter a space in password.")
+      setDecrypted("")
+    }else{
+      decryption(ciphertext, key)
+    }
+  }
 
 
   function encryption(Message, Password) {
@@ -30,6 +73,7 @@ const EncScreen = ({ navigation }) => {
   }
 
   function decryption(finalEncryption, Password) {
+    
     var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
     var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
     var encrypted = finalEncryption.substr(64)
@@ -40,10 +84,16 @@ const EncScreen = ({ navigation }) => {
 
 
     var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
+    console.log(decrypted)
     var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
     console.log("Decypted: " + decrypted.toString(CryptoJs.enc.Utf8))
     setDecrypted(finalDecrypted);
-    return decrypted;
+    if(finalDecrypted == ""){
+      alert("Wrong password. Please enter the right password")
+      setDecrypted("")
+    }else{
+      return decrypted;
+    }
   }
 
 
@@ -56,6 +106,12 @@ const EncScreen = ({ navigation }) => {
           <Text style={styles.userName} >Encryption</Text>
 
           <View style={styles.action}>
+            <Feather 
+              name="shield"
+              color="#000000"
+              size={23}
+            />
+            
             <TextInput
               placeholder="Enter message"
               placeholderTextColor="#000000"
@@ -64,20 +120,49 @@ const EncScreen = ({ navigation }) => {
               autoCapitalize="none"
               onChangeText={(val) => setMessage(val)}
             />
+            {message != "" ? 
+            <Feather 
+            name="check-circle"
+            color="#000000"
+            size={23}
+            />  : null
+            }
+            
           </View>
           <View style={styles.action}>
+          <Feather 
+              name="lock"
+              color="#000000"
+              size={23}
+            />
             <TextInput
               placeholder="Enter password"
               placeholderTextColor="#000000"
+              value={pass}
+              secureTextEntry={checkPass}
               style={styles.textInput}
               autoCapitalize="none"
-              onChangeText={(val) => setKey(val)}
+              onChangeText={(val) => setPass(val)}
             />
+            <TouchableOpacity onPress={showPass}>
+            {checkPass ? 
+            <Feather 
+            name="eye-off"
+            color="#000000"
+            size={23}
+            /> : 
+            <Feather 
+              name="eye"
+              color="#000000"
+              size={23}
+            />
+            }
+            </TouchableOpacity>
           </View>
 
           <Butones
             text="Encrypt"
-            onPress={() => encryption(message, key)}
+            onPress={() => checkEnc(message, pass)}
           />
         </View>
 
@@ -91,6 +176,11 @@ const EncScreen = ({ navigation }) => {
           <Text style={styles.userName} >Decryption</Text>
 
           <View style={styles.action}>
+          <Feather 
+              name="shield"
+              color="#000000"
+              size={23}
+            />
             <TextInput
               placeholder="Enter ciphertext"
               placeholderTextColor="#000000"
@@ -99,20 +189,48 @@ const EncScreen = ({ navigation }) => {
               autoCapitalize="none"
               onChangeText={(val) => setCiphertext(val)}
             />
+            {ciphertext != "" ? 
+            <Feather 
+            name="check-circle"
+            color="#000000"
+            size={23}
+            />  : null
+            }
           </View>
           <View style={styles.action}>
+          <Feather 
+              name="lock"
+              color="#000000"
+              size={23}
+            />
             <TextInput
               placeholder="Enter password"
               placeholderTextColor="#000000"
+              value={key}
+              secureTextEntry={checkKey}
               style={styles.textInput}
               autoCapitalize="none"
               onChangeText={(val) => setKey(val)}
             />
+            <TouchableOpacity onPress={showKey}>
+            {checkKey ? 
+            <Feather 
+            name="eye-off"
+            color="#000000"
+            size={23}
+            /> : 
+            <Feather 
+              name="eye"
+              color="#000000"
+              size={23}
+            />
+            }
+            </TouchableOpacity>
           </View>
 
           <Butones
             text="Decrypt"
-            onPress={() => decryption(ciphertext, key)}
+            onPress={() => checkDec(ciphertext, key)}
           />
         </View>
 
@@ -182,7 +300,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 8,
     color: 'black',
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: "Roboto"
   },
   aboutUser: {
     fontSize: 12,

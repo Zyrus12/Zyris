@@ -1,30 +1,50 @@
 import React, {useState} from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import Butones from '../styles/button';
 import zxcvbn from 'zxcvbn';
+import Feather from 'react-native-vector-icons/Feather';
 
 
 const VulScreen = ({navigation}) => {
 
-  const[userInput,setUserInput] = useState(null)
+  const[showPassword,setShowPassword] = useState(true)
+  const[userInput,setUserInput] = useState("")
   const[warning,setWarning] = useState([])
   const[crackTime,setCrackTime] = useState({})
   const[score,setScore] = useState("")
   const[sequence,setSequence] = useState([{},{}])
   const[suggestions,setSuggestions] = useState([])
 
-  
+  function showPass (){
+    setShowPassword(!showPassword)
+  }
 
  function checkPassword (){
-  const evaluation = zxcvbn(userInput)
-    console.log(evaluation)
+  
+
+  if(userInput == ""){
+    alert("Please enter a password.")
+    setWarning([])
+    setCrackTime({})
+    setScore("")
+    setSequence([{},{}])
+    setSuggestions([])
+  }else if(userInput.indexOf(" ") >= 0){
+    alert("You cannot enter a space in a password.")
+    setWarning([])
+    setCrackTime({})
+    setScore("")
+    setSequence([{},{}])
+    setSuggestions([])  
+  }else{
+    const evaluation = zxcvbn(userInput)
     setWarning(evaluation.feedback.warning)
     setSuggestions(evaluation.feedback.suggestions)
     setCrackTime(evaluation.crack_times_display)
     setSequence(evaluation.sequence)
     setScore(evaluation.score==0 || evaluation.score==1?"Weak":evaluation.score==2?"Fair":evaluation.score==3?"Good":evaluation.score==4?"Strong":"Weak")
-
+  }
  }
 
 
@@ -36,14 +56,35 @@ const VulScreen = ({navigation}) => {
            
             <View style={styles.card}>
             <View style={styles.action}>
+            <Feather 
+              name="lock"
+              color="#000000"
+              size={18}
+            />
             <TextInput 
-                    placeholder="Input Password Here"
-                    placeholderTextColor="#000000"
-                    style={styles.textInput}
-                    autoCapitalize="none"                   
-                    onChangeText={(val) => setUserInput(val)}
-                />
-                </View>
+              placeholder="Input Password Here"
+              placeholderTextColor="#000000"
+              value={userInput}
+              secureTextEntry={showPassword}
+              style={styles.textInput}
+              autoCapitalize="none"                   
+              onChangeText={(val) => setUserInput(val)}
+            />
+            <TouchableOpacity onPress={showPass}>
+            {showPassword ? 
+            <Feather 
+            name="eye-off"
+            color="#000000"
+            size={18}
+            /> : 
+            <Feather 
+              name="eye"
+              color="#000000"
+              size={18}
+            />
+            }
+            </TouchableOpacity>
+            </View>
             <Butones
               text="Check Password"
               onPress={()=>  checkPassword()}
@@ -84,11 +125,8 @@ export default VulScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
- 
     alignItems: 'center',
- 
-    padding: 20,
-    
+    padding: 20,    
   },
   scroller: {
     flex: 1,
@@ -99,7 +137,6 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     color: '#000000',
     fontSize: 12,
-    
 },
 action: {
   flexDirection: 'row',
@@ -126,7 +163,6 @@ action: {
     borderWidth: 2,
     borderColor: '#83EEFF',
     marginTop: 25
-
   },
   userName: {
     fontSize: 25,
@@ -134,7 +170,8 @@ action: {
     marginTop: 0,
     marginBottom: 8,
     color: 'black',
-    textAlign: 'center'
+    textAlign: 'center',
+    fontFamily: "Roboto"
   },
   aboutUser: {
     fontSize: 12,
@@ -150,7 +187,8 @@ action: {
     marginBottom: 10,
     color: 'black',
     marginLeft: '10%',
-    marginRight: '10%'
+    marginRight: '10%',
+    fontFamily: "Roboto"
   },
   userBtnWrapper: {
     flexDirection: 'row',
@@ -184,7 +222,6 @@ action: {
   },
   userInfoItem: {
     justifyContent: 'center',
-
   },
   userInfoTitle: {
     fontSize: 20,
@@ -197,6 +234,5 @@ action: {
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
-
   },
 });

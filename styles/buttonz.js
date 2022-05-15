@@ -18,13 +18,10 @@ const styles = StyleSheet.create({
     button: {
         borderRadius: 20,
         backgroundColor: "rgba(0, 0, 0, .8)",
-        borderColor: "rgba(131, 238, 255, 1)",
-        borderWidth: 2,
-        width: '95%',
+        width: '65%',
         height: 30,
         alignItems: 'center',
         justifyContent: 'center',
-
         marginBottom: 5,
         marginTop: 5,
     },

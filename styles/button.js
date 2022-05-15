@@ -18,8 +18,6 @@ const styles = StyleSheet.create({
     button:{
         borderRadius: 20,
         backgroundColor: "rgba(0, 0, 0, .8)",
-        borderColor: "black",
-        borderWidth: 2,
         width: '35%',
         height: 30,
         alignItems: 'center',

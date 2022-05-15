@@ -1,247 +1,317 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, PermissionsAndroid, TextInput, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import Butones from '../styles/button';
 import Butonez from '../styles/buttonz';
 import * as DocumentPicker from 'expo-document-picker';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as WebBrowser from "expo-web-browser";
-const DecScreen = ({ navigation }) => {
+import * as FileSystem from 'expo-file-system';
+import { StorageAccessFramework } from 'expo-file-system';
+import * as mime from 'mime';
+import CryptoJs from 'crypto-js';
+import LottieView from 'lottie-react-native';
+import Feather from 'react-native-vector-icons/Feather';
 
-  const [modalVisible, setModalVisible] = useState(false);
+const DecScreen = ({ navigation }) => {
+ 
+  const[showPassword,setShowPassword] = useState(true)
+  const [loading, setLoading] = useState(false);
   const [userInput, setUserInput] = useState("")
   const [data, setData] = useState({});
-  const [onLoading, setonLoading] = useState(false);
-  const [files, setFiles] = useState([]);
-  const [pass, setPass] = useState({});
-  const [progressEncDec, setProgressEncDec] = useState(0);
-  const [progressUplaod, setProgressUpload] = useState(0);
-  const [encryptingSave, setencryptingSave] = useState(false);
-  const [encrypting, setEncrypting] = useState("");
-  React.useEffect(async () => {
+  const [base64, setBase64] = useState("");
+  const [finalBase64, setFinalBase64] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [finalFileName, setFinalFileName] = useState("");
+  const [fileExtension, setFileExtension] = useState("");
+  const [fileMime, setFileMime] = useState("");
+  const [finalData, setFinalData] = useState("");
 
-    try {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      ])
-
-    } catch (e) {
-      console.warn(e)
-    }
-   
-  }, [])
-  React.useEffect(async ()=>{
-    let req = await axios.get(`https://zyris-backend.herokuapp.com/files?id=${await AsyncStorage.getItem("USER_ID")}`);
-    let obj = {};
-    let data = req.data;
-    for(let i of data)
-      obj[i.filename] = ""
-    setPass(obj);
-    setFiles(data);
-  }, [])
+  function showPass (){
+    setShowPassword(!showPassword)
+  }
 
   const pickDocument = async () => {
+    setData({});
+    //Getting the document and other information.
     let result = await DocumentPicker.getDocumentAsync({ type: "*/*", copyToCacheDirectory: true });
     setData(result);
-  }
-  function blobToBase64(result) {
-    return new Promise(async (resolve, _) => {
-      const response = await fetch(result.uri);
-      const blob = await response.blob();
-      resolve(blob);
-    });
-  }
-  function save(file, check) {
-    setonLoading(true);
-    blobToBase64(file).then(async (result) => {
-      const form = new FormData();
-      form.append(file.name, result, userInput);
-      let req = await axios.post(`https://zyris-backend.herokuapp.com/enc?id=${await AsyncStorage.getItem('USER_ID')}&encrypt=${check}`,
-        form, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-          onUploadProgress: progressEvent => {
-            setProgressUpload((progressEvent.loaded / progressEvent.total) * 100);
-          }
-      })
-      let obj = {};
-      let data = req.data;
-      for(let i of data)
-        obj[i.filename] = ""
-      setPass(obj);
-      setFiles(data);
-      setencryptingSave(false);
-      setonLoading(false);
-      setProgressUpload(0);
-      setModalVisible(false);
-    });
+    setFileName(result.name);
+    
+    //Encoding the file into base 64
+    const data = await FileSystem.readAsStringAsync(result.uri, { encoding: FileSystem.EncodingType.Base64 });
+    setBase64(data)
+
+    //Getting the orignal extension or Mime Type of the file.
+    const mimeType = mime.getType(result.name);
+    setFileMime(mimeType)
+    
+    //Refreshing the screen
+    setFinalFileName("")
+    setUserInput("")
   }
 
-  const update = async (file, pw) =>{
-    let req = await axios.post(`https://zyris-backend.herokuapp.com/encryptdecrypt`,{
-        id: await AsyncStorage.getItem('USER_ID'),
-        pw: pw,
-        filename: file
-      }, {
-        onUploadProgress: progressEvent => {
-          setProgressEncDec((progressEvent.loaded / progressEvent.total) * 100);
-        }
-      });
-      let obj = {};
-      let data = req.data;
-      for(let i of data)
-        obj[i.filename] = ""
-      setPass(obj);
-      setProgressEncDec(0);
-      setFiles(data);
+  function encryptFile(input) {
+    try{
+      const validation = ".encrypted"
+      if(input == ""){
+        alert("Please enter a password")      
+      }else if(input.indexOf(" ") >= 0){
+        alert("You cannot enter a space in password.")
+        setUserInput("")
+      }else if(fileName.includes(validation) == true){
+        alert("You cannot encrypt an encrypted file. Please choose another file.");  
+        setUserInput("")
+      }else if(data.size >= 8e+7){
+        alert("The limit of file encryption is only 80MB. Please choose another file.")
+        setUserInput("")
+      }else{
+      setLoading(true);
+      //Setting up Encrypted File Name
+      const gettingFileName = fileName;
+      const gettingEncFileName = gettingFileName.slice(0, -4);
+      const finalEncFileName = gettingEncFileName + ".encrypted";
+      setFinalFileName(finalEncFileName);
+  
+  
+      //Adding the original extention or mime type of the file to the base64 value
+      const mimeType = fileMime;
+      const toWordArr = CryptoJs.enc.Utf8.parse(mimeType);
+      const toBase64 = CryptoJs.enc.Base64.stringify(toWordArr);
+      const finalData = base64 + "|" + toBase64;
+      //setFinalBase64(finalData);
+  
+  
+      //Adding custom extension or Mime Type
+      const customExtension = "application/zyris";
+      setFileExtension(customExtension)
+  
+  
+      //Encrypting the file
+      encryption(finalData, input);
+      setTimeout(() => {
+        setLoading(false)
+      }, 2500);
+    }
+    }catch(e){
+      console.error(e)
+    }
+}
+
+  function decryptFile(input){
+ 
+      const validation = ".encrypted"
+      if(input == ""){
+        alert("Please enter a password")      
+      }else if(input.indexOf(" ") >= 0){
+        alert("You cannot enter a space in password.")
+        setUserInput("")
+      }else if(fileName.includes(validation) == false){
+        alert("You cannot decrypt an non encrypted file. Please choose another file");  
+        setUserInput("")
+      }else{
+      setLoading(true)
+      try{
+        //Decrypting the file
+        var validationBase64 = decryption(base64, input)
+        const gettingMimeType = validationBase64.split("|");
+        const mimeType = gettingMimeType[1];
+        const parseWordArr = CryptoJs.enc.Base64.parse(mimeType);
+        const finalMimeType = parseWordArr.toString(CryptoJs.enc.Utf8);
+        setFileExtension(finalMimeType);
+        setFinalData(gettingMimeType[0])
+
+        //Setting up Decrypted File Name
+        const gettingFileName = fileName;
+        const gettingDecFileName = gettingFileName.replace(".encrypted", "");
+        setFinalFileName(gettingDecFileName)
+        setTimeout(() => {
+          setLoading(false)
+        }, 2500);
+      }catch(e){
+        setLoading(false)
+        alert("Wrong password. Please enter the right password");
+        setFinalFileName("")
+      }
+    }
+   
+}
+
+  function encryption(Message, Password) {
+
+    var salt = CryptoJs.lib.WordArray.random(128 / 8);
+    var iv = CryptoJs.lib.WordArray.random(128 / 8);
+    var key = CryptoJs.PBKDF2(Password, salt, {
+      keySize: 128 / 32
+    });
+
+
+    var encrypted = CryptoJs.AES.encrypt(Message, key, { iv: iv });
+    var finalEncryption = salt.toString() + iv.toString() + encrypted.toString()
+    setFinalData(finalEncryption);
+    return finalEncryption;
   }
-  const deleteItem= async ( name) =>{
-    setEncrypting("Deleting....");
-    setProgressEncDec(101);
-    let req = await axios.post(`https://zyris-backend.herokuapp.com/delete`,{
-        id: await AsyncStorage.getItem('USER_ID'),
-        name: name
+
+  function decryption(finalEncryption, Password) {
+    try{
+      var salt = CryptoJs.enc.Hex.parse(finalEncryption.substr(0, 32))
+      var iv = CryptoJs.enc.Hex.parse(finalEncryption.substr(32, 32))
+      var encrypted = finalEncryption.substr(64)
+
+      var key = CryptoJs.PBKDF2(Password, salt, {
+        keySize: 128 / 32
       });
-      let obj = {};
-      let data = req.data;
-      for(let i of data)
-        obj[i.filename] = ""
-      setPass(obj);
-      setProgressEncDec(0);
-      setFiles(data);
+
+      var decrypted = CryptoJs.AES.decrypt(encrypted, key, { iv: iv });
+      var finalDecrypted = decrypted.toString(CryptoJs.enc.Utf8);
+      return finalDecrypted;
+    }catch(e){
+      return null;
+    }
+     
+      
+   
+    
+
+    
+   
+  
+}
+
+  const saveFile = async () => {
+    const permissions = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+    // Check if permission granted
+    if (permissions.granted) {
+      // Get the directory uri that was approved
+      let directoryUri = permissions.directoryUri;
+      // Create file and pass it's SAF URI
+      await StorageAccessFramework.createFileAsync(directoryUri, finalFileName, fileExtension).then(async(fileUri) => {
+      // Save data to newly created file
+       await FileSystem.writeAsStringAsync(fileUri, finalData, { encoding: FileSystem.EncodingType.Base64 });
+       setFinalFileName("")
+       setUserInput("")
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+    } else {
+      alert("You must allow permission to save.")
+    }
   }
+
+ 
+
   return (
+    <>
     <ScrollView style={styles.scroller}>
       <StatusBar style="auto" />
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-      >
-        <TouchableOpacity style={{ backgroundColor: 'rgba( 0, 0, 0, 0)', flex: 1 }}  >
-          <View style={styles.centeredView}>
-            <View style={styles.modalView}>
-              <Text style={styles.modalText}>Do you want to encrypt the file?</Text>
-           
-              {progressUplaod>0?  progressUplaod>=100?
-              encryptingSave?
-              <View style={styles.action}>
-                <Text style={{color:'white'}}>Encrypting...</Text>
-              </View>:
-              <View style={styles.action}>
-                <Text style={{color:'white'}}>Finishing...</Text>
-              </View>
-              : <View style={styles.action}>
-                <Text style={{color:'white'}}>Uploading: {progressUplaod.toFixed(2)}%</Text>
-              </View>:
-              <>
-                 <View style={styles.action}>
-                 <TextInput
-                     placeholder="Enter password"
-                     placeholderTextColor="lightgrey"
-                     style={styles.textInput}
-                     value={userInput}
-                     autoCapitalize="none"
-                     onChangeText={(val) => setUserInput(val)}
-                   />
-               </View>
-              <View style={styles.action3}>
-                <View style={{ flex: 1 }}>
-                  <Butonez
-                    text="Yes"
-                    onPress={() => {setencryptingSave(true);save(data, true);}}
-                  />
-                </View>
-
-                <View style={{ flex: 1 }}>
-                  <Butonez
-                    text="No"
-                    onPress={()=>save(data, false)}
-                  />
-                </View>
-              
-              </View>
-              </>
-              }
-              <View style={{ flex: 1 }}>
-                  <Butonez
-                    text="Close"
-                    onPress={()=>setModalVisible(false)}
-                  />
-                </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.userName} >File Information</Text>
           <Text style={styles.result}>File Name: {data.name} </Text>
-          <Text style={styles.result}>File Type: {data.type} </Text>
           <Text style={styles.result}>File Size: {data.size} </Text>
-
+          <Text style={styles.result}>File Type: {data.mimeType} </Text>
+  
           <Butones
             text="Select File"
             onPress={pickDocument}
           />
+      </View> 
           {"name" in data?
-          <Butones
-            text="Upload"
-            onPress={() => setModalVisible(true)}
-          /> :null 
+          <View style={styles.card}>
+          <Text style={styles.userName} >Enter Password</Text>
+              <View style={styles.action}>
+              <Feather 
+              name="lock"
+              color="#000000"
+              size={18}
+            />
+                <TextInput
+                  placeholder="Enter password"
+                  placeholderTextColor="#000000"
+                  value={userInput}
+                  secureTextEntry={showPassword}
+                  style={styles.textInput}
+                  autoCapitalize="none"
+                  onChangeText={(val) => setUserInput(val)}
+                />
+                <TouchableOpacity onPress={showPass}>
+            {showPassword ? 
+            <Feather 
+            name="eye-off"
+            color="#000000"
+            size={18}
+            /> : 
+            <Feather 
+              name="eye"
+              color="#000000"
+              size={18}
+            />
+            }
+            </TouchableOpacity>
+              </View>
+
+          <View style={styles.action3}>
+          <View style={{flex: 1}}>
+          <Butonez
+            text="Encrypt"
+            onPress={() => encryptFile(userInput)}
+          />
+          </View>
+
+          <View style={{flex: 1}}>
+          <Butonez
+            text="Decrypt"
+            onPress={() => decryptFile(userInput)}
+          />
+          </View>
+          </View>
+
+      </View> 
+            :null 
           }
-        </View>
-
-        {/* <View style={styles.card}>
-          <Text selectable={true} selectTextOnFocus={true} style={styles.result} >{url}</Text>
-
-        </View> */}
-        {progressEncDec>0?
-        progressEncDec>=100?
-        <View style={styles.action}>
-            <Text style={{color:'white'}}>{encrypting}</Text>
-        </View>:
-        <View style={styles.action}>
-            <Text style={{color:'white'}}>Uploading: {progressEncDec.toFixed(2)}%</Text>
-        </View>:
-        files.map((data, index)=>{
-          return(
-          <View style={styles.card} key={index}>
-          <View style={styles.action}>
-            <Text>{data.filename}</Text>
-          </View>
-          <View style={styles.action}>
-          <TextInput
-              placeholder="Enter password"
-              placeholderTextColor="black"
-              style={styles.textInput2}
-
-              autoCapitalize="none"
-              onChangeText={(val) => pass[data.filename] = val}
-          />
-          </View>
-          
-          <Butones
-            text={data.encrypt?"Decrypt":"Encrypt"}
-            onPress={() => {setEncrypting(data.encrypt?"Decrypting....":"Encrypting....");update(data.filename, pass[data.filename]);}}
-          />
-          <Butones
-            text={"Download"}
-            onPress={() => WebBrowser.openBrowserAsync(data.url)}
-          />
-          <Butones
-            text={"Delete"}
-            onPress={() => deleteItem(data.filename)}
-          />
-        </View>);
-        })}
+          {finalFileName != ""?
          
+            <View style={styles.card}>
+            <Text style={styles.userName} >Processed File</Text>
+            <Text style={styles.result}>File Name: {finalFileName} </Text>
+            <Text style={styles.result}>File Type: {fileExtension} </Text>
+    
+            <Butones
+              text="Save File"
+              onPress={() => saveFile()}
+            />
+        </View>
+          : null
+          }
+
+            
       </View>
     </ScrollView>
+
+    {loading ? (
+        <View
+          style={{
+            backgroundColor: "black",
+            position: "absolute",
+            opacity: 0.6,
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+            width: "100%",
+          }}
+        >
+          <LottieView
+            style={{ height: 200 }}
+            source={require("../assets/scanner.json")}
+            autoPlay
+            speed={3}
+          />
+        </View>
+      ) : (
+        <></>
+      )}
+
+    </>
   );
 }
 
@@ -255,16 +325,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    // justifyContent: 'center',
     padding: 20,
 
+  },
+  constainer1: {
+    backgroundColor: "rgba(0, 0, 0, .1)",
+    justifyContent: "center",
+    alignContent: "center",
+    flex: 2
   },
   textInput: {
     flex: 1,
     paddingLeft: 8,
-    color: 'white',
+    color: '#000000',
     fontSize: 12,
-
   },
   textInput2: {
     flex: 1,
@@ -277,7 +351,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: 10,
     borderBottomWidth: 1.5,
-    borderBottomColor: 'white',
+    borderBottomColor: '#000000',
     paddingBottom: 5,
     marginBottom: 10,
     marginLeft: '8%',
@@ -286,9 +360,7 @@ const styles = StyleSheet.create({
   action3: {
     width: '100%',
     flexDirection: 'row',
-    marginTop: 10,
-    paddingBottom: 5,
-    marginBottom: 10,
+    justifyContent: 'center'
   },
   card: {
     backgroundColor: 'rgba(131, 238, 255, 0.8)',
@@ -377,27 +449,4 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
-  modalView: {
-    marginTop: 75,
-    margin: 20,
-    backgroundColor: "rgba( 0, 0, 0, .9)",
-    borderRadius: 20,
-    padding: 35,
-    alignItems: "center",
-    shadowColor: "#000",
-    borderWidth: 2,
-    borderColor: "#83EEFF",
-    shadowOffset: {
-      width: 5,
-      height: 5
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
-  },
-  modalText: {
-    marginBottom: 30,
-    textAlign: "center",
-    color: "#83EEFF",
-  }
 });

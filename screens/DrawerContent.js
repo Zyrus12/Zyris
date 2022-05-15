@@ -12,6 +12,7 @@ import {
     DrawerItem
 } from '@react-navigation/drawer';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
 
 
 
@@ -22,7 +23,7 @@ export function DrawerContent(props) {
 
 
     return(
-        <View style={{flex:1, backgroundColor: 'rgba(0, 0, 0, 0.88)'}}>
+        <View style={{flex:1}}>
             <DrawerContentScrollView {...props}>
                 <View style={styles.drawerContent}>
                     <View style={styles.userInfoSection}>
@@ -52,7 +53,8 @@ export function DrawerContent(props) {
                             )}
                             labelStyle={{
                                 color: "#83EEFF",
-                                fontSize: 18
+                                fontSize: 18,
+                                fontFamily: "Roboto"
                             }}
                             label="Home"
                             onPress={() => {props.navigation.navigate('Home')}}
@@ -67,7 +69,8 @@ export function DrawerContent(props) {
                             )}
                             labelStyle={{
                                 color: "#83EEFF",
-                                fontSize: 18
+                                fontSize: 18,
+                                fontFamily: "Roboto"
                             }}
                             label="Developers"
                             onPress={() => {props.navigation.navigate('Developer')}}
@@ -79,17 +82,17 @@ export function DrawerContent(props) {
             <Drawer.Section style={styles.bottomDrawerSection}>
                 <DrawerItem 
                     icon={({color, size}) => (
-                        <Icon 
-                        name="ios-log-out-outline" 
+                        <Icons
+                        name="account-lock" 
                         color= "#83EEFF"
                         size={size}
                         />
                     )}
                     labelStyle={{
-                        color: "#83EEFF"
+                        color: "#83EEFF",
+                        fontFamily: "Roboto"
                     }}
-                    label="Sign Out"
-                    onPress={() =>  BackHandler.exitApp()}
+                    label="Protect Yourself!"
                 />
             </Drawer.Section>
         </View>
@@ -105,24 +108,28 @@ const styles = StyleSheet.create({
       borderBottomColor: "#83EEFF",
       borderBottomWidth: 1.5,
       paddingBottom: 23,
+      fontFamily: "Roboto"
     },
     title: {
       fontSize: 23,
       marginTop: 20,
       marginBottom: 5,
       fontWeight: 'bold',
-      color:"#83EEFF"
+      color:"#83EEFF",
+      fontFamily: "Roboto"
     },
     caption: {
       paddingTop: 10,
       fontSize: 16,
       lineHeight: 16,
-      color: "#83EEFF"
+      color: "#83EEFF",
+      fontFamily: "Roboto"
     },
     caption1: {
         fontSize: 17,
         lineHeight: 17,
-        color:"#83EEFF"
+        color:"#83EEFF",
+        fontFamily: "Roboto"
       },
     row: {
       marginTop: 20,
@@ -140,7 +147,8 @@ const styles = StyleSheet.create({
       fontWeight: 'bold',
       marginRight: 5,
       fontSize: 20,
-      color:"#83EEFF"
+      color:"#83EEFF",
+      fontFamily: "Roboto"
       
     },
     drawerSection: {
