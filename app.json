@@ -4,7 +4,7 @@
     "slug": "Zyris",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/adaptive-icon.png",
+    "icon": "./assets/iconz.png",
     "splash": {
       "image": "./assets/splashz.png",
       "resizeMode": "cover"
@@ -19,9 +19,10 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.zyris.capstone",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/hey.png",
+        "backgroundColor": "#2596be"
       }
     },
     "web": {

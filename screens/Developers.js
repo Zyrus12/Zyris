@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 12,
     color: "#83EEFF",
+    fontFamily: "Roboto"
   },
   aboutUser: {
     fontSize: 14,
@@ -127,6 +128,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: "center",
     color: "rgba(131, 238, 255, 0.8)",
+    fontFamily: "Roboto"
   },
   userInfoSubTitle: {
     fontSize: 12,

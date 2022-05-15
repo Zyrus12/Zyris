@@ -1,34 +1,33 @@
 import React, {useState} from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput} from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity} from 'react-native';
 import Butones from '../styles/button';
 import generatePasswords from '../functions/PasswordGenerator';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Feather from 'react-native-vector-icons/Feather';
+
 
 const HomeScreen = ({navigation}) => {
 
-    const[userInput,setUserInput] = useState(null)
-    const[passwords,setPasswords] = useState([])
+    const[userInput,setUserInput] = useState("");
+    const[passwords,setPasswords] = useState([]);
+    const[check, setCheck] = useState(false);
 
-
-    React.useEffect(async()=>{
-      try {
-    
-        const value = await AsyncStorage.getItem('USER_ID');
-        if (value === null) {
-          let req = await axios.get("https://zyris-backend.herokuapp.com/getID");
-          await AsyncStorage.setItem(
-          'USER_ID',
-          req.data.id
-        );
-        }
-        
-      } catch (error) {
-        // Error saving data
-        console.log("hello");
+    function checkUserInput(){
+      let counter = userInput.split(",").length -1;
+      if( userInput == "" ){
+        alert("Please enter keywords.")
+        setCheck(false);
+        setPasswords([]);
+      }else if(counter != 6){
+        alert("Please make sure to enter 5 keywords and 2 set of numbers.")
+        setCheck(false);
+        setPasswords([]);
+      }else{
+        setPasswords(generatePasswords(userInput,5))
+        setCheck(true);
       }
-    }, []);
+    }
+
     return(
         
           <View style={styles.container} >
@@ -42,17 +41,34 @@ const HomeScreen = ({navigation}) => {
 
             <View style={styles.card}>
             <View style={styles.action}>
+            <Feather 
+              name="edit"
+              color="#000000"
+              size={18}
+            />
             <TextInput 
-                    placeholder="Input Keyword Here"
-                    placeholderTextColor="#000000"
-                    style={styles.textInput}
-                    autoCapitalize="none"
-                    onChangeText={(val) => setUserInput(val)}
+              placeholder="Input Keyword Here"
+              placeholderTextColor="#000000"
+              style={styles.textInput}
+              value={userInput}
+              autoCapitalize="none"
+              onChangeText={(val) => setUserInput(val)}
+            />
+            <TouchableOpacity>
+              {check ?
+                <Feather 
+                name="check-circle"
+                color="#000000"
+                size={18}
                 />
-                </View>
+                : null
+              }
+            </TouchableOpacity>
+            
+            </View>
             <Butones
               text="Generate"
-              onPress={()=> setPasswords(generatePasswords(userInput,5))}
+              onPress={()=> checkUserInput()}
             />
             <StatusBar style="auto" />
             </View>
@@ -78,7 +94,6 @@ export default HomeScreen;
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, .9)',
       alignItems: 'center',
-     // justifyContent: 'center',
       padding: 20,
     },
     textInput: {
@@ -121,7 +136,8 @@ export default HomeScreen;
       marginTop: 0,
       marginBottom: 8,
       color: 'black',
-      textAlign: 'center'
+      textAlign: 'center',
+      fontFamily: "Roboto"
     },
     aboutUser: {
       fontSize: 12,
@@ -129,7 +145,8 @@ export default HomeScreen;
       marginBottom: 10,
       color: 'black',
       marginLeft: '10%',
-      marginRight: '10%'
+      marginRight: '10%',
+      fontFamily: "Roboto"
     },
     result: {
       fontSize: 12,
