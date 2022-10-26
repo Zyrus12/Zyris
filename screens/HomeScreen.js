@@ -32,7 +32,7 @@ const HomeScreen = ({navigation}) => {
         
           <View style={styles.container} >
             <View style={styles.card}>
-            <Text style={styles.userName} >Note!</Text>
+            <Text style={styles.userName} >Note! Bagong gawang Screen ko to</Text>
             <Text style={styles.aboutUser} >Please enter five different keywords and two numbers and use "," as separator. {"\n"}
             (Ex. Flower,Guitar,Rose,Console,Steak,12,25)
             </Text>
