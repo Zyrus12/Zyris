@@ -104,7 +104,7 @@ const EncScreen = ({ navigation }) => {
         <StatusBar style="auto" />
 
         <View style={styles.card}>
-          <Text style={styles.userName}>Encryption</Text>
+          <Text style={styles.userName}>Encryption inedit ko na</Text>
 
           <View style={styles.action}>
             <Feather name="shield" color="#000000" size={23} />
